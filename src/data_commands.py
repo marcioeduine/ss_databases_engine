@@ -7,7 +7,7 @@
 #    By: Ser Superior <marcioeduine@gmail.com>       +#++:++#++ +#++:++#++     #
 #                                                          +#+        +#+      #
 #    Created: 2026/07/09 10:25:00 by Ser Superior  #+#    #+# #+#    #+#       #
-#    Updated: 2026/07/09 20:22:00 by Ser Superior  ########   ########         #
+#    Updated: 2026/07/10 14:35:00 by Ser Superior  ########   ########         #
 #                                                                              #
 # **************************************************************************** #
 """Comandos de manipulação estrutural e de registos: update, rename, insert."""
@@ -106,16 +106,35 @@ def handle_insert_command(conn: sqlite3.Connection, cursor: sqlite3.Cursor, curr
 
     args = parts[1:]
     try:
+        # Audit the template table 'original' to extract preferred structural column ordering
+        try:
+            cursor.execute("PRAGMA table_info(original);")
+            orig_info = cursor.fetchall()
+            orig_insert_columns = []
+            for col in orig_info:
+                is_pk = col[5] == 1
+                col_type = col[2].upper()
+                if is_pk and ("INT" in col_type or col_type == ""):
+                    continue
+                orig_insert_columns.append(col[1])
+        except Exception:
+            orig_insert_columns = []
+
         cursor.execute(f"PRAGMA table_info({current_table});")
         columns_info = cursor.fetchall()
+        curr_columns = [col[1] for col in columns_info]
 
-        insert_columns = []
-        for col in columns_info:
-            is_pk = col[5] == 1
-            col_type = col[2].upper()
-            if is_pk and ("INT" in col_type or col_type == ""):
-                continue
-            insert_columns.append(col[1])
+        # Realign insertion targets if current entity matches template columns layout
+        if orig_insert_columns and set(orig_insert_columns).issubset(set(curr_columns)):
+            insert_columns = orig_insert_columns
+        else:
+            insert_columns = []
+            for col in columns_info:
+                is_pk = col[5] == 1
+                col_type = col[2].upper()
+                if is_pk and ("INT" in col_type or col_type == ""):
+                    continue
+                insert_columns.append(col[1])
 
         if len(args) != len(insert_columns):
             print(f"Error: Match failure. Expected {len(insert_columns)} fields, got {len(args)}.")

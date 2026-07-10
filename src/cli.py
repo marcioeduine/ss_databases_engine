@@ -7,7 +7,7 @@
 #    By: Ser Superior <marcioeduine@gmail.com>       +#++:++#++ +#++:++#++     #
 #                                                          +#+        +#+      #
 #    Created: 2026/07/09 10:25:00 by Ser Superior  #+#    #+# #+#    #+#       #
-#    Updated: 2026/07/09 21:50:00 by Ser Superior  ########   ########         #
+#    Updated: 2026/07/10 14:30:00 by Ser Superior  ########   ########         #
 #                                                                              #
 # **************************************************************************** #
 """REPL entry point: input analysis, command dispatching, and main loop."""
@@ -137,15 +137,23 @@ def main() -> None:
         elif cmd in ("inspect", "audit"):
             handle_inspect_command(cursor, current_table, parts)
         elif cmd == ".schema":
-        	handle_schema_dot_command(cursor, current_table, parts)
+            handle_schema_dot_command(cursor, current_table, parts)
         elif cmd == "export":
             handle_export_command(cursor, parts)
         elif cmd == "update":
-            handle_update_command(conn, cursor, current_table, parts, engine_config)
+            # If it matches standard ANSI SQL 'UPDATE <table> SET', bypass macro and route to raw engine
+            if len(parts) > 2 and parts[2].lower() == "set":
+                handle_raw_sql(conn, cursor, db_name, user_input, engine_config)
+            else:
+                handle_update_command(conn, cursor, current_table, parts, engine_config)
         elif cmd == "rename":
             current_table = handle_rename_command(conn, cursor, current_table, parts, engine_config)
         elif cmd == "insert":
-            handle_insert_command(conn, cursor, current_table, parts, engine_config)
+            # If it matches standard ANSI SQL 'INSERT INTO ...', bypass macro and route to raw engine
+            if len(parts) > 1 and parts[1].lower() == "into":
+                handle_raw_sql(conn, cursor, db_name, user_input, engine_config)
+            else:
+                handle_insert_command(conn, cursor, current_table, parts, engine_config)
         elif cmd == "begin":
             if engine_config["in_transaction"]:
                 print("Warning: A transaction block is already active.")
