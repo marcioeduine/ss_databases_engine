@@ -1,4 +1,4 @@
-# SS_DB Engine — REPL Interactivo para Administração de Bases de Dados
+# SS - Databases Engine — REPL Interactivo para Administração de Bases de Dados
 
 `SS_DB Engine` é uma shell interactiva (REPL — *Read-Eval-Print Loop*) escrita em Python 3, pensada para administração, exploração e depuração rápida de bases de dados a partir da linha de comandos. Combina macros de alto nível (navegação de tabelas, exportação, inserção assistida) com acesso directo a SQL puro, gestão de múltiplas sessões em simultâneo e telemetria de execução configurável em tempo real.
 
