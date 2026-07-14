@@ -10,7 +10,7 @@
 #                                                                              #
 # **************************************************************************** #
 
-NAME		= ss_sqlite_cli
+NAME		= ssdatabases_cli
 DB			= database.db
 SQL			= sqlite3
 SQLFLAGS	= -column -header
@@ -22,8 +22,11 @@ all: $(DB)
 $(DB): $(SRC)
 	$(SQL) $(SQLFLAGS) $(DB) < $(SRC)
 
-fclean:
-	rm -rf ./build ./dist ./$(NAME).spec $(DB)
+clean:
+	rm -rf ./build ./dist ./$(NAME).spec
+
+fclean: clean
+	rm -f $(DB)
 
 re: fclean all
 
