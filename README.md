@@ -105,7 +105,7 @@ Escreve `help` a qualquer momento para consultar o menu de comandos disponíveis
 .
 ├── .gitignore
 ├── LICENSE
-├── Makefile                   # Alvos: all, fclean, re, run, build
+├── Makefile                   # Alvos: all, clean, fclean, re, run, build
 ├── README.md                  # Este ficheiro
 ├── DOC_USER.md                # Manual do utilizador (todos os comandos, exemplos, fluxos)
 ├── DOC_DEV.md                 # Documentação técnica (arquitectura, extensão, limitações)
