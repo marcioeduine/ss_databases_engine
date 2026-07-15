@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 # **************************************************************************** #
 #                                                                              #
-#                                                        ::::::::   ::::::::   #
-#    cli.py                                            :+:    :+: :+:    :+:   #
-#                                                     +:+        +:+           #
-#    By: Ser Superior <marcioeduine@gmail.com>       +#++:++#++ +#++:++#++     #
-#                                                          +#+        +#+      #
-#    Created: 2026/07/09 10:25:00 by Ser Superior  #+#    #+# #+#    #+#       #
-#    Updated: 2026/07/14 08:00:00 by Ser Superior  ########   ########         #
+#                                                          ::::::::   :::::::: #
+#    cli.py                                              :+:    :+: :+:    :+: #
+#                                                      +:+        +:+          #
+#    By: Ser Superior <marcioeduine@gmail.com>        +#++:++#++ +#++:++#++    #
+#                                                        +#+        +#+        #
+#    Created: 2026/07/09 10:25:00 by Ser Superior   #+#    #+# #+#    #+#        #
+#    Updated: 2026/07/15 21:26:00 by Ser Superior  ########   ########         #
 #                                                                              #
 # **************************************************************************** #
 """REPL entry point: input analysis, command dispatching, and main loop.
@@ -60,7 +60,7 @@ def main() -> None:
     initialise_cli_history()
 
     # ------------------------------------------------------------------ #
-    # Bootstrap: if a path/URI is supplied as a CLI argument, open it     #
+    # Bootstrap: if a path/URI is supplied as a CLI argument, open it      #
     # automatically under the alias 'default'.                             #
     # ------------------------------------------------------------------ #
     if len(sys.argv) > 1:
@@ -195,7 +195,7 @@ def main() -> None:
             session = _get_active_or_warn(session_manager)
             if not session:
                 continue
-            result = handle_open_command(session.driver.cursor, parts)
+            result = handle_open_command(session.driver, parts)
             if result:
                 session.active_table = result
 
@@ -212,31 +212,31 @@ def main() -> None:
             session = _get_active_or_warn(session_manager)
             if not session:
                 continue
-            handle_list_ls_command(session.driver.cursor, session.active_table, parts)
+            handle_list_ls_command(session.driver, session.active_table, parts)
 
         elif cmd == "print":
             session = _get_active_or_warn(session_manager)
             if not session:
                 continue
-            handle_print_command(session.driver.cursor, session.active_table, parts)
+            handle_print_command(session.driver, session.active_table, parts)
 
         elif cmd in ("inspect", "audit"):
             session = _get_active_or_warn(session_manager)
             if not session:
                 continue
-            handle_inspect_command(session.driver.cursor, session.active_table, parts)
+            handle_inspect_command(session.driver, session.active_table, parts)
 
         elif cmd == ".schema":
             session = _get_active_or_warn(session_manager)
             if not session:
                 continue
-            handle_schema_dot_command(session.driver.cursor, session.active_table, parts)
+            handle_schema_dot_command(session.driver, session.active_table, parts)
 
         elif cmd == "export":
             session = _get_active_or_warn(session_manager)
             if not session:
                 continue
-            handle_export_command(session.driver.cursor, parts)
+            handle_export_command(session.driver, parts)
 
         elif cmd == "update":
             session = _get_active_or_warn(session_manager)
@@ -337,7 +337,7 @@ def main() -> None:
             )
 
     # ------------------------------------------------------------------ #
-    # Graceful shutdown: disconnect all registered sessions               #
+    # Graceful shutdown: disconnect all registered sessions                #
     # ------------------------------------------------------------------ #
     for alias in list(session_manager.sessions.keys()):
         session_manager.sessions[alias].driver.disconnect()
