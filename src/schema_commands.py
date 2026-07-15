@@ -9,107 +9,85 @@
 #    Updated: 2026/07/15 21:20:00 by Ser Superior  ########   ########         #
 #                                                                              #
 # **************************************************************************** #
-"""Comandos de navegação e inspecção do esquema: open, close, list, print, inspect."""
+"""Comandos completos de navegação, inspecção, escrita e transações do SS_DB."""
 
 from utils import print_tabular_output
 
+# --- Comandos de Escrita (Seção 6 do Manual) ---
+
+def handle_update_command(driver, current_table: str or None, parts: list) -> None:
+    """update <coluna> <id> <valor>: Actualiza uma linha numa tabela aberta."""
+    if not current_table:
+        print("Error: No active table context. Use 'open <table_name>' first.")
+        return
+    if len(parts) < 4:
+        print("Usage: update <column> <id> <new_value>")
+        return
+    
+    col, id_val, val = parts[1], parts[2], parts[3]
+    if driver.update_record(current_table, col, val, id_val):
+        print(f"Table '{current_table}' column '{col}' updated for ID '{id_val}'.")
+
+def handle_insert_command(driver, current_table: str or None, parts: list) -> None:
+    """insert <valores>: Insere nova linha na tabela aberta."""
+    if not current_table:
+        print("Error: No active table context. Use 'open <table_name>' first.")
+        return
+    values = parts[1:]
+    if driver.insert_record(current_table, values):
+        print(f"Row successfully inserted into '{current_table}'.")
+
+# --- Comandos de Transação (Seção 9 do Manual) ---
+
+def handle_begin_command(driver) -> None:
+    driver.begin_transaction()
+    print("Transaction started. Structural locks are now active.")
+
+def handle_commit_command(driver) -> None:
+    driver.commit_transaction()
+    print("Transaction successfully committed to disk storage.")
+
+def handle_rollback_command(driver) -> None:
+    driver.rollback_transaction()
+    print("Transaction discarded. State reverted to last known clean point.")
+
+# --- Comandos de Navegação e Inspecção (Seções 4 e 5) ---
 
 def handle_schema_dot_command(driver, current_table: str or None, parts: list) -> None:
-    """Extracts and displays the native DDL creation statement for the targeted entity."""
-    target_table = None
-    if len(parts) > 1:
-        target_table = parts[1]
-    elif current_table:
-        target_table = current_table
-    else:
-        print("Error: Specify a target table or open a table context first. Usage: .schema <table_name>")
+    target_table = parts[1] if len(parts) > 1 else current_table
+    if not target_table or not driver.entity_exists(target_table):
+        print("Error: Invalid table context.")
         return
-
-    if not driver.entity_exists(target_table):
-        print(f"Error: Table or View '{target_table}' does not exist in the active schema.")
-        return
-
-    ddl_statement = driver.get_table_schema(target_table)
-    if ddl_statement:
-        print(f"\n{ddl_statement};\n")
-    else:
-        print(f"Error: DDL extraction not supported or unavailable for '{target_table}'.")
-
+    print(f"\n{driver.get_table_schema(target_table)};\n")
 
 def handle_open_command(driver, parts: list) -> str or None:
-    """Validates and switches context into the specified table or view schema."""
-    if len(parts) < 2:
-        print("Error: Target context must be specified. Example: open dim_players")
-        return None
-        
-    target_table = parts[1]
-    if driver.entity_exists(target_table):
-        return target_table
-        
-    print(f"Error: Context '{target_table}' does not exist in the active schema.")
+    target = parts[1] if len(parts) > 1 else None
+    if target and driver.entity_exists(target):
+        return target
+    print(f"Error: Context '{target}' does not exist.")
     return None
 
-
 def handle_list_ls_command(driver, current_table: str or None, parts: list) -> None:
-    """Handles schema lookup commands dynamically through the active driver abstraction layer."""
     if current_table:
         headers, rows = driver.fetch_columns_info(current_table)
-        if not rows:
-            print(f"Error: Metadata for '{current_table}' is unreachable or empty.")
-            return
         print_tabular_output(headers, rows)
     else:
-        if len(parts) == 1:
-            entities = driver.list_entities()
-            if not entities:
-                print("No entities discovered in the active schema target.")
-                return
-            
-            formatted_rows = [(entity,) for entity in entities]
-            print_tabular_output(["Available Contexts (Tables/Views)"], formatted_rows)
-        else:
-            target_table = parts[1]
-            headers, rows = driver.fetch_columns_info(target_table)
-            if not rows:
-                print(f"Error: Metadata for '{target_table}' is unreachable or empty.")
-                return
-            print_tabular_output(headers, rows)
-
+        entities = driver.list_entities()
+        print_tabular_output(["Available Contexts (Tables/Views)"], [(e,) for e in entities])
 
 def handle_print_command(driver, current_table: str or None, parts: list) -> None:
-    """Dumps targeted row contents dynamically supporting N-column projections."""
     if not current_table:
-        entities = driver.list_entities()
-        formatted_rows = [(entity,) for entity in entities]
-        print_tabular_output(["Available Contexts (Tables/Views)"], formatted_rows)
-    else:
-        target_columns = []
-        if len(parts) > 1:
-            target_columns = parts[1:]
-            
-        headers, rows = driver.fetch_data(current_table, target_columns)
-        if not headers and not rows:
-            print(f"Error: Failed to fetch data from '{current_table}'.")
-            return
-            
-        print_tabular_output(headers, rows)
-
+        print("Error: Use 'open <table_name>' first.")
+        return
+    headers, rows = driver.fetch_data(current_table, parts[1:] if len(parts) > 1 else None)
+    print_tabular_output(headers, rows)
 
 def handle_inspect_command(driver, current_table: str or None, parts: list) -> None:
-    """Audits operational metadata structures like indexes and foreign constraints via driver."""
-    target_table = None
-    if len(parts) > 1:
-        target_table = parts[1]
-    elif current_table:
-        target_table = current_table
-    else:
-        print("Error: Specify a target table or open a table context first. Usage: inspect <table_name>")
+    target = parts[1] if len(parts) > 1 else current_table
+    if not target or not driver.entity_exists(target):
+        print("Error: Context does not exist.")
         return
-        
-    if not driver.entity_exists(target_table):
-        print(f"Error: Context '{target_table}' does not exist in the active schema.")
-        return
-        
-    print(f"\n=== Deep Architectural Inspection Profile: [{target_table}] ===")
-    driver.inspect_entity(target_table)
-    print("==================================================================\n")
+    metadata = driver.inspect_entity(target)
+    print(f"\n=== Deep Architectural Inspection Profile: [{target}] ===")
+    print(f"Primary Key: {metadata.get('primary_key')}")
+    print_tabular_output(["Column", "Type", "Nullable", "Default"], metadata.get('columns', []))
